@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <button onclick="get_1()">获取1</button>
+    <button onclick="get_2()">获取2</button>
+    <button onclick="testCancel()">取消</button>
+    <script src="https://cdn.bootcdn.net/ajax/libs/axios/0.21.0/axios.min.js"></script>
+    <script>
+        axios.defaults.baseURL = 'http://localhost:4000'
+        let cancel
+        //请求拦截器
+        axios.interceptors.request.use(
+            config => {
+                if (typeof cancel == 'function') {
+                    cancel('强制取消')
+                }
+                config.cancelToken = new axios.CancelToken((c) => {
+                    cancel = c
+                })
+                return config
+            },
+            error => {
+                return Promise.reject(error)
+            }
+        )
+        //响应拦截器
+        axios.interceptors.response.use(
+            res => {
+                cancel = null
+                return res
+            },
+            error => {
+                if (axios.isCancel(error)) {
+                    console.log('请求1被取消', error.message);
+                    return new Promise(() => {})
+                } else {
+                    cancel = null
+                    return Promise.reject(error)
+                }
+
+            }
+        )
+
+        function get_1() {
+            axios.get('/products1')
+                .then(
+                    res => {
+                        console.log('请求1成功', res.data);
+                    }
+                )
+                .catch(
+                    error => {
+                        console.log('请求1失败', error.message);
+                    }
+                )
+        }
+
+
+        function get_2() {
+
+            axios.get('/products2')
+                .then(
+                    res => {
+                        console.log('请求2成功', res.data);
+                    }
+                )
+                .catch(
+                    error => {
+                        console.log('请求2失败', error.message);
+                    }
+                )
+        }
+
+        function testCancel() {
+            //执行
+            if (typeof cancel == 'function') {
+                cancel('强制取消')
+            } else {
+                console.log('没有可取消的请求');
+            }
+        }
+    </script>
+</body>
+
+</html>

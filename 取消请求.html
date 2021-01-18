@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <button onclick="get_1()">获取1</button>
+    <button onclick="get_2()">获取2</button>
+    <button onclick="testCancel()">取消</button>
+    <script src="https://cdn.bootcdn.net/ajax/libs/axios/0.21.0/axios.min.js"></script>
+    <script>
+        axios.defaults.baseURL = 'http://localhost:4000'
+        let cancel
+
+        function get_1() {
+            const CancelToken = axios.CancelToken
+            if (typeof cancel == 'function') {
+                cancel('强制取消')
+            }
+            axios.get('/products1', {
+                    //用于保存取消请求的函数，将来使用
+                    cancelToken: new CancelToken((c) => {
+                        cancel = c
+                    })
+                })
+                .then(
+                    res => {
+                        cancel = null
+                        console.log('请求1成功', res.data);
+                    }
+                )
+                .catch(
+                    error => {
+                        if (axios.isCancel(error)) {
+                            console.log('请求1被取消', error.message);
+                        } else {
+                            cancel = null
+                            console.log('请求1失败', error.message);
+                        }
+
+                    }
+                )
+        }
+
+
+        function get_2() {
+            if (typeof cancel == 'function') {
+                cancel('强制取消')
+            }
+            axios.get('/products2', {
+                    cancelToken: new axios.CancelToken(c => cancel = c)
+                })
+                .then(
+                    res => {
+                        console.log('请求2成功', res.data);
+                    }
+                )
+                .catch(
+                    error => {
+                        if (axios.isCancel(error)) {
+                            console.log('请求2被取消', error.message);
+                        } else {
+                            cancel = null
+                            console.log('请求2失败', error.message);
+                        }
+
+                    }
+                )
+        }
+
+        function testCancel() {
+            //执行
+            if (typeof cancel == 'function') {
+                cancel('强制取消')
+            } else {
+                console.log('没有可取消的请求');
+            }
+        }
+    </script>
+</body>
+
+</html>
